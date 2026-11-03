@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { Search } from 'lucide-react'
 import { sections } from '@/data/lessons'
 import MobileMenu from './MobileMenu'
+import { getUser } from '@/lib/auth'
+import { logout } from '@/app/actions'
 
 const nav = [
   { label: '📚 TẤT CẢ BÀI HỌC', href: '/' },
@@ -11,8 +13,12 @@ const nav = [
   { label: '❓ FAQ', href: '/lessons/cau-hoi-thuong-gap' },
 ]
 
-export default function Header() {
-  const mobileLinks = sections.map((s) => ({ href: `/lessons/${s.slug}`, label: `${s.icon} ${s.order}. ${s.title}` }))
+export default async function Header() {
+  const user = await getUser()
+  const mobileLinks = [
+    ...(user ? [{ href: '/payment', label: '🔑 Tài khoản' }, ...(user.isAdmin ? [{ href: '/admin', label: '🛠️ Admin' }] : [])] : [{ href: '/login', label: '🔑 Đăng nhập' }, { href: '/register', label: '📝 Đăng ký' }]),
+    ...sections.map((s) => ({ href: `/lessons/${s.slug}`, label: `${s.icon} ${s.order}. ${s.title}` })),
+  ]
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-[#E5E7EB] shadow-sm">
       <div className="max-w-[1400px] mx-auto px-4 h-16 flex items-center gap-4">
@@ -32,7 +38,7 @@ export default function Header() {
           <input name="q" placeholder="Tìm bài học..." className="bg-transparent flex-1 text-sm outline-none placeholder:text-[#94A3B8]" />
         </form>
 
-        <nav className="hidden lg:flex items-center gap-1 flex-1">
+        <nav className="hidden lg:flex items-center gap-1">
           {nav.map((i) => (
             <Link key={i.href} href={i.href} className="text-[13px] font-semibold text-[#1F2937] hover:text-[#6C3CC9] px-3 py-2 rounded-lg hover:bg-[#F5F3FF] transition-colors">
               {i.label}
@@ -40,6 +46,21 @@ export default function Header() {
           ))}
         </nav>
 
+        <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
+          {user ? (
+            <>
+              {user.isAdmin && <Link href="/admin" className="text-[13px] font-semibold text-[#1F2937] hover:text-[#6C3CC9] px-3 py-2">🛠️ Admin</Link>}
+              <Link href="/payment" className="text-[13px] font-semibold text-[#1F2937] max-w-[140px] truncate hover:text-[#6C3CC9]">{user.name}</Link>
+              {!user.hasAccess && <Link href="/payment" className="text-[12px] font-bold text-white bg-red-500 rounded-full px-3 py-1">Mở khoá</Link>}
+              <form action={logout}><button className="text-[13px] font-semibold text-[#6C3CC9] border border-[#6C3CC9] px-4 py-1.5 rounded-full hover:bg-[#EDE9FE]">Đăng xuất</button></form>
+            </>
+          ) : (
+            <>
+              <Link href="/register" className="text-[13px] font-semibold text-[#6C3CC9] border border-[#6C3CC9] px-4 py-1.5 rounded-full hover:bg-[#EDE9FE]">Đăng ký</Link>
+              <Link href="/login" className="text-[13px] font-semibold text-white bg-[#6C3CC9] hover:bg-[#5829A8] px-4 py-1.5 rounded-full">Đăng nhập</Link>
+            </>
+          )}
+        </div>
         <MobileMenu links={mobileLinks} />
       </div>
     </header>
